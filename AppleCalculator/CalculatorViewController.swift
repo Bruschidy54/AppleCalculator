@@ -18,7 +18,7 @@ class CalculatorViewController: UIViewController {
     // MARK: Global Variables
     
     var performingOperation = false
-    var displayNumber: Double = 0
+    var displayNumber: Double? = 0
     var previousNumber: Double? = nil
     var justTappedEqual = false
     
@@ -36,7 +36,7 @@ class CalculatorViewController: UIViewController {
         }
         
         // If there was previously an error, we will treat subsequent number taps as if we had just performed an operation
-        if numberLabel.text == "Error" {
+        if displayNumber == nil {
             performingOperation = true
             
         }
@@ -53,11 +53,23 @@ class CalculatorViewController: UIViewController {
             performingOperation = false
             displayNumber = Double(sender.tag)
             unhighlightOperationButton(withOperationType: highlightedOperation)
-            showNumberOnLabel(number: displayNumber)
+            do {
+            try showNumberOnLabel(display: displayNumber)
+            } catch {
+                print(error)
+                numberLabel.text = "Error"
+                displayNumber = nil
+            }
         } else {
             if numberLabel.text == "0" {
                 displayNumber = Double(sender.tag)
-                showNumberOnLabel(number: displayNumber)
+                do {
+                    try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
             } else {
                 // The numberLabel string should only have 9 number digits
                 let numberStringWithoutCommasAndDecimals = numberLabel.text?.filter { $0 != "," || $0 != "." || $0 != "-"}
@@ -78,8 +90,13 @@ class CalculatorViewController: UIViewController {
                     numberLabel.text = newDisplayString
                     return
                 }
-                
-                showNumberOnLabel(number: displayNumber)
+                do {
+                try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
                 
             }
         }
@@ -91,7 +108,13 @@ class CalculatorViewController: UIViewController {
                justTappedEqual = false
             flashOperation(button: sender)
             unhighlightOperationButton(withOperationType: operationType)
-            showNumberOnLabel(number: 0)
+               do {
+             try showNumberOnLabel(display: 0)
+               } catch {
+                print(error)
+                numberLabel.text = "Error"
+                displayNumber = nil
+               }
             previousNumber = nil
             displayNumber = 0
             operationType = .none
@@ -99,26 +122,43 @@ class CalculatorViewController: UIViewController {
         case 11: // Positive/Negative
             flashOperation(button: sender)
             // Will not perform if last operation resulted in error
-            guard numberLabel.text != "Error" else {
+            guard displayNumber != nil else {
                 return
             }
             performingOperation = true
             // By choice, this operation will just perform on the display number
-            displayNumber = displayNumber * -1
-            showNumberOnLabel(number: displayNumber)
+            displayNumber = displayNumber! * -1
+            do {
+            try showNumberOnLabel(display: displayNumber)
+            } catch {
+                print(error)
+                numberLabel.text = "Error"
+                displayNumber = nil
+            }
             break
         case 12: // Percent
             flashOperation(button: sender)
             // Will not perform if last operation resulted in error
-            guard numberLabel.text != "Error" else {
+            guard displayNumber != nil else {
                 return
             }
             performingOperation = true
             // By choice, this operation will just perform on the display number
-            displayNumber = displayNumber/100
-            showNumberOnLabel(number: displayNumber)
+            displayNumber = displayNumber!/100
+            do {
+            try showNumberOnLabel(display: displayNumber)
+            } catch {
+                numberLabel.text = "Error"
+                displayNumber = nil
+                print(error)
+            }
             break
         case 13: // Division
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
                justTappedEqual = false
             // Button will flash if already selected, else it will highlight
             if highlightedOperation == .division {
@@ -128,7 +168,14 @@ class CalculatorViewController: UIViewController {
                 unhighlightOperationButton(withOperationType: highlightedOperation)
             }
             if operationType != .none && performingOperation == false {
-                calculateOperation()
+                do {
+                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .division)
+                try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
             }
             highlightedOperation = .division
             previousNumber = displayNumber
@@ -136,8 +183,12 @@ class CalculatorViewController: UIViewController {
             performingOperation = true
             break
         case 14: // Multiplication
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
                justTappedEqual = false
-             // Button will flash if already selected, else it will highlight
             if highlightedOperation == .multiplication {
                 highlightOperation(button: sender, flash: true)
             } else {
@@ -145,7 +196,14 @@ class CalculatorViewController: UIViewController {
                 unhighlightOperationButton(withOperationType: highlightedOperation)
             }
             if operationType != .none && performingOperation == false {
-                calculateOperation()
+                do {
+                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .multiplication)
+                try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
             }
             highlightedOperation = .multiplication
             previousNumber = displayNumber
@@ -153,6 +211,11 @@ class CalculatorViewController: UIViewController {
             performingOperation = true
             break
         case 15: // Subtraction
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
                justTappedEqual = false
              // Button will flash if already selected, else it will highlight
             if highlightedOperation == .subtraction {
@@ -162,7 +225,14 @@ class CalculatorViewController: UIViewController {
                 unhighlightOperationButton(withOperationType: highlightedOperation)
             }
             if operationType != .none && performingOperation == false {
-                calculateOperation()
+                do {
+                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .subtraction)
+                try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
             }
             highlightedOperation = .subtraction
             previousNumber = displayNumber
@@ -170,7 +240,13 @@ class CalculatorViewController: UIViewController {
             performingOperation = true
             break
         case 16: // Addition
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
                justTappedEqual = false
+            
              // Button will flash if already selected, else it will highlight
             if highlightedOperation == .addition {
                 highlightOperation(button: sender, flash: true)
@@ -179,7 +255,15 @@ class CalculatorViewController: UIViewController {
             unhighlightOperationButton(withOperationType: highlightedOperation)
             }
             if operationType != .none && performingOperation == false {
-                calculateOperation()
+               
+                do {
+                    displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .addition)
+                try showNumberOnLabel(display: displayNumber)
+                } catch {
+                    print(error)
+                    numberLabel.text = "Error"
+                    displayNumber = nil
+                }
             }
             highlightedOperation = .addition
             previousNumber = displayNumber
@@ -187,14 +271,31 @@ class CalculatorViewController: UIViewController {
             performingOperation = true
             break
         case 17: // Equal
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
             justTappedEqual = true
             flashOperation(button: sender)
             unhighlightOperationButton(withOperationType: operationType)
             highlightedOperation = .none
-            calculateOperation()
+            do {
+            displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: operationType)
+            try showNumberOnLabel(display: displayNumber)
+            } catch {
+                print(error)
+                numberLabel.text = "Error"
+                displayNumber = nil
+            }
             performingOperation = true
             break
         case 18: // Decimal Point
+            
+            guard displayNumber != nil else {
+                return
+            }
+            
             flashOperation(button: sender)
             
             // Prevents bug where hitting . after performing operation does not register new number
@@ -299,7 +400,12 @@ class CalculatorViewController: UIViewController {
     
     // MARK: Label UI Methods
     
-    func showNumberOnLabel(number: Double) {
+    func showNumberOnLabel(display: Double?) throws {
+        
+        guard let number = display else {
+            numberLabel.text = "Error"
+            return
+        }
         
         let numberFormatter = NumberFormatter()
         numberFormatter.maximumFractionDigits = 9
@@ -311,53 +417,58 @@ class CalculatorViewController: UIViewController {
             numberFormatter.numberStyle = NumberFormatter.Style.decimal
         }
         
-        // Prevents number overflow error
-        if abs(number) > pow(10, 160) {
-            numberLabel.text = "Error"
-            return
-        }
         
         numberLabel.text = numberFormatter.string(from: NSNumber(value: number))
     }
     
     // MARK: Math
     
-    func calculateOperation() {
-        guard numberLabel.text != "Error" else {
-            return
+    //TO DO: Need to separate math from UI
+    
+    func calculateOperation(firstNumber: Double?, secondNumber: Double?, operation: OperationType) throws -> Double? {
+        
+        guard let second = secondNumber else {
+            return nil
         }
         
+        var result: Double = 0
+        
         // If previous number is nil, the Apple Calculator defaults to performing the operation with the display number as the previous number
-        if operationType == .division && displayNumber != 0 {
-            if let previous = previousNumber {
-                displayNumber = previous / displayNumber
+        if operation == .division && secondNumber != 0 {
+            if let first = firstNumber {
+                result = first / second
             } else {
-                displayNumber = displayNumber / displayNumber
+                result = second / second
             }
-        } else if operationType == .division {
+        } else if operation == .division {
             // Catches divide by zero error
-            numberLabel.text = "Error"
-            return
-        } else if operationType == .multiplication {
-            if let previous = previousNumber {
-                displayNumber = previous * displayNumber
+            throw OperationError.divideByZero
+        } else if operation == .multiplication {
+            if let first = firstNumber {
+                result = first * second
             } else {
-                displayNumber = displayNumber * displayNumber
+                result = second * second
             }
-        } else if operationType == .subtraction {
-            if let previous = previousNumber {
-                displayNumber = previous - displayNumber
+        } else if operation == .subtraction {
+            if let first = firstNumber {
+                result = first - second
             } else {
-                displayNumber = displayNumber - displayNumber
+                result = second - second
             }
-        } else if operationType == .addition {
-            if let previous = previousNumber {
-                displayNumber = previous + displayNumber
+        } else if operation == .addition {
+            if let first = firstNumber {
+                result = first + second
             } else {
-                displayNumber = displayNumber + displayNumber
+                result = second + second
             }
         }
-        showNumberOnLabel(number: displayNumber)
+        
+        // Prevents number overflow error
+        guard abs(result) <= pow(10, 160) else {
+            throw OperationError.overflow
+        }
+        
+        return result
     }
 }
 
