@@ -100,6 +100,7 @@ class CalculatorViewController: UIViewController {
                 
             }
         }
+          print("Prev: \(previousNumber); current: \(displayNumber)")
     }
     
     @IBAction func onOperationTapped(_ sender: UIButton) {
@@ -155,120 +156,19 @@ class CalculatorViewController: UIViewController {
             break
         case 13: // Division
             
-            guard displayNumber != nil else {
-                return
-            }
-            
-               justTappedEqual = false
-            // Button will flash if already selected, else it will highlight
-            if highlightedOperation == .division {
-                highlightOperation(button: sender, flash: true)
-            } else {
-                highlightOperation(button: sender, flash: false)
-                unhighlightOperationButton(withOperationType: highlightedOperation)
-            }
-            if operationType != .none && performingOperation == false {
-                do {
-                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .division)
-                try showNumberOnLabel(display: displayNumber)
-                } catch {
-                    print(error)
-                    numberLabel.text = "Error"
-                    displayNumber = nil
-                }
-            }
-            highlightedOperation = .division
-            previousNumber = displayNumber
-            operationType = .division
-            performingOperation = true
+          handle(operation: .division, andAnimationFor: sender)
             break
         case 14: // Multiplication
             
-            guard displayNumber != nil else {
-                return
-            }
-            
-               justTappedEqual = false
-            if highlightedOperation == .multiplication {
-                highlightOperation(button: sender, flash: true)
-            } else {
-                highlightOperation(button: sender, flash: false)
-                unhighlightOperationButton(withOperationType: highlightedOperation)
-            }
-            if operationType != .none && performingOperation == false {
-                do {
-                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .multiplication)
-                try showNumberOnLabel(display: displayNumber)
-                } catch {
-                    print(error)
-                    numberLabel.text = "Error"
-                    displayNumber = nil
-                }
-            }
-            highlightedOperation = .multiplication
-            previousNumber = displayNumber
-            operationType = .multiplication
-            performingOperation = true
+            handle(operation: .multiplication, andAnimationFor: sender)
             break
         case 15: // Subtraction
             
-            guard displayNumber != nil else {
-                return
-            }
-            
-               justTappedEqual = false
-             // Button will flash if already selected, else it will highlight
-            if highlightedOperation == .subtraction {
-                highlightOperation(button: sender, flash: true)
-            } else {
-                highlightOperation(button: sender, flash: false)
-                unhighlightOperationButton(withOperationType: highlightedOperation)
-            }
-            if operationType != .none && performingOperation == false {
-                do {
-                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .subtraction)
-                try showNumberOnLabel(display: displayNumber)
-                } catch {
-                    print(error)
-                    numberLabel.text = "Error"
-                    displayNumber = nil
-                }
-            }
-            highlightedOperation = .subtraction
-            previousNumber = displayNumber
-            operationType = .subtraction
-            performingOperation = true
+        handle(operation: .subtraction, andAnimationFor: sender)
             break
         case 16: // Addition
             
-            guard displayNumber != nil else {
-                return
-            }
-            
-               justTappedEqual = false
-            
-             // Button will flash if already selected, else it will highlight
-            if highlightedOperation == .addition {
-                highlightOperation(button: sender, flash: true)
-            } else {
-                highlightOperation(button: sender, flash: false)
-            unhighlightOperationButton(withOperationType: highlightedOperation)
-            }
-            if operationType != .none && performingOperation == false {
-               
-                do {
-                    displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: .addition)
-                try showNumberOnLabel(display: displayNumber)
-                } catch {
-                    print(error)
-                    numberLabel.text = "Error"
-                    displayNumber = nil
-                }
-            }
-            highlightedOperation = .addition
-            previousNumber = displayNumber
-            operationType = .addition
-            performingOperation = true
+         handle(operation: .addition, andAnimationFor: sender)
             break
         case 17: // Equal
             
@@ -276,18 +176,28 @@ class CalculatorViewController: UIViewController {
                 return
             }
             
-            justTappedEqual = true
+            
+            
             flashOperation(button: sender)
             unhighlightOperationButton(withOperationType: operationType)
             highlightedOperation = .none
+            
+            var firstNumber = previousNumber
+            var secondNumber = displayNumber
+            if justTappedEqual {
+                firstNumber = displayNumber
+                secondNumber = previousNumber
+            }
             do {
-            displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: operationType)
+            displayNumber = try calculateOperation(firstNumber: firstNumber, secondNumber: secondNumber, operation: operationType)
             try showNumberOnLabel(display: displayNumber)
             } catch {
                 print(error)
                 numberLabel.text = "Error"
                 displayNumber = nil
             }
+            previousNumber = secondNumber
+            justTappedEqual = true
             performingOperation = true
             break
         case 18: // Decimal Point
@@ -326,6 +236,40 @@ class CalculatorViewController: UIViewController {
         default:
             break
         }
+        print("Prev: \(previousNumber); current: \(displayNumber)")
+    }
+    
+    func handle(operation: OperationType, andAnimationFor button: UIButton) {
+        
+        guard displayNumber != nil else {
+            return
+        }
+        
+        if highlightedOperation == operation {
+            highlightOperation(button: button, flash: true)
+        } else {
+            highlightOperation(button: button, flash: false)
+            unhighlightOperationButton(withOperationType: highlightedOperation)
+        }
+        
+        
+        if operationType != .none && performingOperation == false {
+            
+            do {
+                displayNumber = try calculateOperation(firstNumber: previousNumber, secondNumber: displayNumber, operation: operation)
+                try showNumberOnLabel(display: displayNumber)
+            } catch {
+                print(error)
+                numberLabel.text = "Error"
+                displayNumber = nil
+            }
+        }
+        
+        previousNumber = displayNumber
+        justTappedEqual = false
+        highlightedOperation = operation
+        operationType = operation
+        performingOperation = true
     }
     
     // Need to round buttons only after contraints are put into place
@@ -423,15 +367,13 @@ class CalculatorViewController: UIViewController {
     
     // MARK: Math
     
-    //TO DO: Need to separate math from UI
-    
     func calculateOperation(firstNumber: Double?, secondNumber: Double?, operation: OperationType) throws -> Double? {
         
         guard let second = secondNumber else {
             return nil
         }
         
-        var result: Double = 0
+        var result: Double = second
         
         // If previous number is nil, the Apple Calculator defaults to performing the operation with the display number as the previous number
         if operation == .division && secondNumber != 0 {

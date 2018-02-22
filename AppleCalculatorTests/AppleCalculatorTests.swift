@@ -11,10 +11,10 @@ import XCTest
 
 class AppleCalculatorTests: XCTestCase {
     
-      let viewController = CalculatorViewController()
     
     func testCalculateOperation() {
         
+        let viewController = CalculatorViewController()
         
         var first: Double? = 0
         var second: Double? = 0
